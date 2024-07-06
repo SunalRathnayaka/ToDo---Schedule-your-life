@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToDo - Schedule your life</title>
+    <style>
+        html,body{
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        body{
+            font-family: Montserrat, sans-serif;
+        }
+        #heading{
+            text-align: center;
+            height: 40px;
+            font-size: 28px;
+            box-shadow: 5px 10px;
+            margin-bottom: 20px;
+            box-shadow: 0px 5px 15px 0px rgba(0, 0, 0, 0.35);
+            padding-top: 5px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .e1{
+            width: 97%;
+            height: 60px;
+            margin-left: 10px;
+            border-radius: 10px;
+            background-color: #D9D9D9;
+            padding-top: 5px;
+            margin-top: 8px;
+            position: relative;
+            animation: fadeIn 0.5s ease-out;
+        }
+        .e2{
+            width: 97%;
+            height: 60px;
+            margin-left: 10px;
+            border-radius: 10px;
+            background-color: #ffa6a6;
+            padding-top: 5px;
+            margin-top: 8px;
+            position: relative;
+            animation: fadeIn 0.5s ease-out;
+        }
+        .done{
+            text-align: center;
+            font-size: 30px;
+            margin-top: 150px;
+        }
+        .jobtitle{
+            position: relative;
+            top: 4px;
+            font-size: 25px;
+        }
+        .jobdate{
+            position: absolute;
+            left: 3%;
+        }
+        .addtask{
+            position: fixed;
+            border-radius: 16px;
+            right: 20px;
+            bottom: 20px;
+            width: 30px;
+            box-shadow: 0px 5px 5px 0px rgba(0, 0, 0, 0.35);
+        }
+        .editicon{
+            position: relative;
+            width: 30px;
+            left: 95%;
+            bottom: 25%;
+            z-index: 10;
+        }
+        .editicon:hover{
+            cursor: pointer;
+            filter: brightness(0.8)
+        }
+        .addtask:hover{
+            cursor: pointer;
+            filter: brightness(0.9);
+        }
+        #tasks {
+            height: 725px;
+            overflow-y: auto;
+        }
+        .logout{
+            width: 35px;
+            position: absolute;
+            right: 10px;
+            top: 5px;
+            border-radius: 100%;
+            filter: grayscale(1);
+        }
+        .logout:hover{
+            filter: grayscale(1);
+            filter: brightness(0.8);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="maindiv">
+        <div id="heading">Today's work <img src="asserts/logout.jpg" class="logout" onclick="logout()"> </div>
+        <div id="tasks"></div>
+        <img src="asserts/plus.png"  class="addtask" onclick="createBrowserWindow()">
+    </div>
+    <script>
+        const supabase = require("./supabase_client.js");
+        const fs = require("fs");
+        const data_1 = fs.readFileSync("user.json");
+        const data_2 = JSON.parse(data_1);
+        var date = new Date();
+        var day = date.getDate();
+        var month = date.getMonth() + 1;
+        var year = date.getFullYear();
+        var hour = date.getHours();
+        var minute = date.getMinutes();
+        if (month < 10) month = "0" + month;
+        if (day < 10) day = "0" + day;
+        if (hour < 10) hour = "0" + hour;
+        if (minute < 10) minute = "0" + minute;
+        var today = year + "-" + month + "-" + day; 
+        var time = hour + ":" + minute;
+
+        function taskedit(task){
+            localStorage.setItem('taskToEdit', JSON.stringify(task));
+            window.location.href = "edittask.html";
+        }
+
+        function taskdone(task) {
+            let updatedate;
+            const deletetask = async () => {
+                const deletetaskvar = await supabase
+                .from("task")
+                .delete()
+                .eq("id", task.id);
+                taskdisplay();
+            }
+            const updatetask = async () => {
+                const updatetaskvar = await supabase
+                .from("task")
+                .update({date: updatedate})
+                .eq("id", task.id);
+                taskdisplay();
+                }
+                if(task.once==true){
+                    deletetask();
+                }else if(task.daily==true){
+                    updatedate = new Date;
+                    updatedate.setDate(updatedate.getDate() + 1);
+                    updatetask();
+                }else if(task.weekly==true){
+                    updatedate = new Date(task.date)
+                    while (updatedate<date){
+                        updatedate.setDate(updatedate.getDate()+7)
+                        console.log(updatedate)
+                    }
+                    if (!(updatedate<date)){
+                        updatedate.setDate(updatedate.getDate()+7)
+                    }
+                    updatetask()
+                }
+        }
+
+        const fetchtasks = async () => {
+            const { data, error } = await supabase
+                .from("task")
+                .select()
+                .eq("username", data_2.dbuserdetails[0].username);
+            return data;
+        };
+
+        const taskdisplay = async() => {
+            const test = await fetchtasks();
+            const mainDiv = document.getElementById('tasks');
+            mainDiv.innerHTML = '';
+            
+            function taskdivdisplay(task){
+                const newTaskHtml = `
+                    <div class="e1">
+                        <input type="checkbox" onclick='taskdone(${JSON.stringify(task)})'>
+                        <span class="jobtitle">${task.task}</span><br>
+                        <span class="jobdate">${task.date} ${task.time}</span>
+                        <img src="asserts/edittask.png" class="editicon" onclick='taskedit(${JSON.stringify(task)})'>
+                    </div>
+
+                `;
+                const newdueTaskHtml = `
+                    <div class="e2">
+                        <input type="checkbox" onclick='taskdone(${JSON.stringify(task)})'>
+                        <span class="jobtitle">${task.task}</span><br>
+                        <span class="jobdate">${task.date} ${task.time}</span>
+                        <img src="asserts/edittask.png" class="editicon" onclick='taskedit(${JSON.stringify(task)})'>
+                    </div>
+                `;
+                if(task.date < today || (task.date == today && task.time < time)){
+                    mainDiv.innerHTML += newdueTaskHtml;
+                }
+                else{
+                    mainDiv.innerHTML += newTaskHtml;
+                }
+            }
+
+            for (let task of test) {
+                if(task.once==true){
+
+                    taskdivdisplay(task);
+
+                }else if (task.daily==true){
+
+                    if(task.date == today){
+                        taskdivdisplay(task);
+                    }else if(task.date < today){
+                        taskdivdisplay(task);
+                    }
+
+
+                }else if(task.weekly==true){
+                    let weeklytestdate = new Date(task.date)
+                    let datediff = parseInt((weeklytestdate - date) / (1000 * 60 * 60 * 24))
+                    weeklytestdate.setDate(weeklytestdate.getDate()+7)
+                    if(task.date == today || task.date < today){
+                        taskdivdisplay(task);
+                        console.log(test)
+                    } else if (datediff<7){
+                        console.log(date)
+                        console.log(weeklytestdate)
+                        taskdivdisplay(task);
+                    }
+                }
+            }
+            if(test.length == 0){
+                mainDiv.innerHTML += "<h1 class='done'>Everything is done. Go relax, get some you time!</h1>";
+            }
+        }
+        function createBrowserWindow() {
+            window.location.href = "newtask.html";
+        }
+        function logout(){
+            const data_1 = fs.readFileSync("user.json");
+            const data_2 = JSON.parse(data_1);
+            data_2.dbuserdetails[0].id = "";
+            data_2.dbuserdetails[0].username = "";
+            data_2.dbuserdetails[0].password = "";
+            fs.writeFileSync("user.json", JSON.stringify(data_2));
+            window.location.href = "index.html";
+        }
+        taskdisplay();
+        setInterval(() => {
+            taskdisplay();
+        }, 60000);   
+    </script>
+</body>
+</html>

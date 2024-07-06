@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>ToDo - Schedule your life</title>
+    <style type="text/css">
+      body {
+        font-family: Montserrat, sans-serif;
+      }
+      .LogIn {
+        position: fixed;
+        inset: 0px;
+        width: 30rem;
+        height: 25rem;
+        max-width: 100vw;
+        max-height: 100dvh;
+        margin: auto;
+        text-align: center;
+      }
+      .logclass {
+        background-color: #d9d9d9;
+        border: none;
+        height: 20px;
+      }
+      .logButton {
+        background-color: #2fdaff;
+        border: none;
+        width: 75px;
+        height: 25px;
+        border-radius: 5px;
+        margin-left: auto;
+        margin-right: auto;
+        cursor: pointer;
+        padding-top: 5px;
+            }
+      .logButton:hover {
+        filter: brightness(80%);
+      }
+      .incorrectlog {
+        border: 1px red solid;
+        background-color: lightpink;
+        color: red;
+        width: 70%;
+        margin-left: 15%;
+        margin-top: 5%;
+        border-radius: 10px;
+        visibility: hidden;
+      }
+      .incorrectlog.active {
+        visibility: visible;
+      }
+      .newaccount {
+        color: #2fdaff;
+      }
+    </style>
+    <script>
+      const fs = require("fs");
+      const data_1 = fs.readFileSync("user.json");
+      const data_2 = JSON.parse(data_1);
+      if (data_2.dbuserdetails[0].username !== "") {
+        window.location.href = "main.html";
+      }
+    </script>
+  </head>
+  <body>
+    <div class="LogIn">
+      <h1>Welcome to your Curtain Call!<br /></h1>
+      <h2>Sign in to start Scheduling</h2>
+      <br /><br />
+      <form method="get">
+        <input
+          type="text"
+          name="username"
+          id="username"
+          placeholder="Username"
+          size="40"
+          class="logclass"
+        />
+        <br /><br />
+        <input
+          type="password"
+          name="password"
+          id="password"
+          placeholder="Password"
+          size="40"
+          class="logclass"
+        />
+        <br /><br />
+        <div class="logButton" id="logbtn">Log In</div>
+      </form>
+      <br />
+      <div class="incorrectlog">
+        <p>Invalid username or password!</p>
+      </div>
+      <br /><br /><br />
+      <p>
+        Don't have an account?
+        <span class="newaccount"><a href="newacc.html">Create an account here! </a></span>
+      </p>
+    </div>
+    <script type="text/javascript">
+      const supabase = require("./supabase_client.js");
+      let incorrect = document.getElementsByClassName("incorrectlog");
+      let logbtn = document.getElementById("logbtn");
+      logbtn.addEventListener("click", login);
+      function login() {
+        usernamevl = document.getElementById("username").value;
+        passwordvl = document.getElementById("password").value;
+        if (usernamevl === "" || passwordvl === "") {
+          if (incorrect[0].classList.contains("active")) {
+            incorrect[0].innerHTML = "Please enter the username and password to login!"
+          } else {
+            incorrect[0].innerHTML = "Please enter the username and password to login!";
+            incorrect[0].classList.add("active");
+          }
+        } else {
+          loginverti();
+        }
+      }
+
+      const fetchusers = async () => {
+        const { data, error } = await supabase
+          .from("users")
+          .select()
+          .eq("username", usernamevl);
+        return data;
+      };
+      const loginverti = async () => {
+        const dbuserdetails = await fetchusers();
+
+        if (dbuserdetails[0] == null) {
+          if (incorrect[0].classList.contains("active")) {
+            incorrect[0].innerHTML = "Please enter the correct username and password to login!";
+          } else {
+            incorrect[0].innerHTML = "Please enter the correct username and password to login!";
+            incorrect[0].classList.add("active");
+          }
+        } else {
+          if (
+            usernamevl !== dbuserdetails[0].username ||
+            passwordvl !== dbuserdetails[0].password
+          ) {
+            if (incorrect[0].classList.contains("active")) {
+              incorrect[0].innerHTML = "Please enter the correct username and password to login!";
+            } else {
+              incorrect[0].innerHTML = "Please enter the correct username and password to login!";
+              incorrect[0].classList.add("active");
+            }
+          } else {
+            incorrect[0].classList.remove("active");
+            const data = JSON.stringify({ dbuserdetails });
+            fs.writeFileSync("user.json", data);
+            const data_1 = fs.readFileSync("user.json");
+            const data_2 = JSON.parse(data_1);
+            window.location.href = "main.html";
+          }
+        }
+      };
+    </script>
+  </body>
+</html>

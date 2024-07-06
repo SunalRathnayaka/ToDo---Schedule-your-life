@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToDo - Schedule your life</title>
+    <style>
+        body {
+        font-family: Montserrat, sans-serif;
+        }
+        .newacc{
+            position: fixed;
+            inset: 0px;
+            width: 30rem;
+            height: 25rem;
+            max-width: 100vw;
+            max-height: 100dvh;
+            margin: auto;
+            text-align: center;
+        }
+        .newclass {
+        background-color: #d9d9d9;
+        border: none;
+        height: 20px;
+      }
+      .newButton {
+        background-color: #2fdaff;
+        border: none;
+        width: 150px;
+        height: 25px;
+        border-radius: 5px;
+        margin-left: auto;
+        margin-right: auto;
+        cursor: pointer;
+        padding-top: 5px;
+      }
+      .newButton:hover {
+        filter: brightness(80%);
+      }
+      .incorrectnew {
+        border: 1px red solid;
+        background-color: lightpink;
+        color: red;
+        width: 70%;
+        margin-left: 15%;
+        margin-top: 5%;
+        border-radius: 10px;
+        visibility: hidden;
+      }
+      .incorrectnew.active {
+        visibility: visible;
+      }
+      .newaccount {
+        color: #2fdaff;
+      }
+    </style>
+</head>
+<body>
+    <div class="newacc">
+        <h1>Create your ToDo Account</h1>
+        <br /><br />
+      <form method="get">
+        <input
+          type="text"
+          name="newusername"
+          id="newusername"
+          placeholder="Username"
+          size="40"
+          class="newclass"
+        />
+        <br /><br />
+        <input
+          type="password"
+          name="newpassword"
+          id="newpassword"
+          placeholder="Password"
+          size="40"
+          class="newclass"
+        />
+        <br /><br />
+        <input
+          type="password"
+          name="newpasswordconf"
+          id="newpasswordconf"
+          placeholder="Confirm Password"
+          size="40"
+          class="newclass"
+        />
+        <br /><br />
+        <div class="newButton" id="logbtn">Create Account</div>
+      </form>
+      <div class="incorrectnew">
+        <p>Invalid username or password!</p>
+      </div>
+      <br /><br /><br />
+      <p>
+        Have an account?
+        <span class="newaccount"><a href="index.html">Sign In</a></span>
+      </p>
+    </div>
+    <script>
+        const supabase = require("./supabase_client.js");
+        let incorrectnew = document.getElementsByClassName("incorrectnew");
+        let logbtn = document.getElementById("logbtn");
+        logbtn.addEventListener("click", newacc);
+        function newacc(){
+            const newusername = document.getElementById("newusername").value
+            const newpassword = document.getElementById("newpassword").value
+            const passwordconfirm = document.getElementById("newpasswordconf").value
+            console.log("check")
+            if (newusername === "" || newpassword === "" || passwordconfirm === ""){
+
+                if (incorrectnew[0].classList.contains("active")) {
+                    incorrectnew[0].innerHTML = "Please enter the username and password to create a new account!";
+                } else {
+                    incorrectnew[0].innerHTML = "Please enter the username and password to create a new account!";
+                    incorrectnew[0].classList.add("active");
+                }
+            } else if(newpassword!==passwordconfirm){
+                if (incorrectnew[0].classList.contains("active")) {
+                    incorrectnew[0].innerHTML = "Password and confirm password doesn't match!";
+                } else {
+                    incorrectnew[0].innerHTML = "Password and confirm password doesn't match!";
+                    incorrectnew[0].classList.add("active");
+                }
+            } else {
+                newaccverti()
+            }
+        }
+        const fetchusers = async () => {
+          const { data, error } = await supabase
+            .from("users")
+            .select()
+            .eq("username", document.getElementById("newusername").value)
+          return(data);  
+        }
+        const addusers = async () => {
+          const { error } = await supabase
+            .from("users")
+            .insert({ username: document.getElementById("newusername").value, password: document.getElementById("newpassword").value })
+
+        }
+        const newaccverti = async () => {
+          const newuserdetails = await fetchusers();
+          if (newuserdetails[0] == null){
+
+            addusers()
+            if (incorrectnew[0].classList.contains("active")) {
+              incorrectnew[0].innerHTML = "New account has been created!";
+              incorrectnew[0].style.color = "black"
+              incorrectnew[0].style.backgroundColor = "lightgreen"
+            } else {
+              incorrectnew[0].innerHTML = "New account has been created!";
+              incorrectnew[0].style.color = "black"
+              incorrectnew[0].style.backgroundColor = "lightgreen"
+              incorrectnew[0].classList.add("active");
+            }
+            setTimeout(() => {
+              window.location.href = "index.html"
+            }, "2000");
+
+          } else{
+            if (incorrectnew[0].classList.contains("active")) {
+                incorrectnew[0].innerHTML = "Username is already taken!";
+            } else {
+                incorrectnew[0].innerHTML = "Username is already taken!";
+                incorrectnew[0].classList.add("active");
+            }
+          }
+        }
+    </script>
+</body>
+</html>

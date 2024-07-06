@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToDo - Schedule your life</title>
+    <style>
+        .container{
+            position: fixed;
+            inset: 0px;
+            width: 40rem;
+            height: 25rem;
+            max-width: 100vw;
+            max-height: 100dvh;
+            margin: auto;
+            text-align: center;
+            margin-top: 100px;
+        }
+        .container h1{
+            bottom: 45%;
+            position: relative;
+        }
+        .container form{
+            bottom: 20%;
+            position: relative;
+        }
+        .container .newtasklabel{
+            background-color: #565555;
+            display: block;
+            color: #FFFFFF;
+            width: 200px;
+            border: none;
+            height: 30px;
+            text-align: center;
+            padding-top: 10px;
+            margin-left: auto;
+            margin-right: auto;
+            margin-bottom: -10px;
+        }
+        .container input.special{
+            width: 300px;
+        }
+        .logclass {
+            background-color: #d9d9d9;
+            border: none;
+            height: 20px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            height: 40px;
+            width: 600px;
+            text-align: center;
+        
+      }
+      .logButton {
+        background-color: #7B7676;
+        color: #FFFFFF;
+        border: none;
+        width: 95px;
+        height: 30px;
+        border-radius: 5px;
+        margin-left: auto;
+        margin-right: auto;
+        position: relative;
+        margin-top: -50px;
+        padding-top: 10px;
+        padding-bottom: 0px;
+      }
+      .logButton.next {
+        left: 300px;
+        top: -10px;
+      }
+      .logButton.back {
+        right: 300px;
+      }
+      .logButton.delete{
+        top: 10px
+      }
+      .logButton:hover {
+        cursor: pointer;
+        filter: brightness(0.8);
+      }
+      .radio-group {
+        display: flex;
+        justify-content: center;
+        gap: 10px; /* Adjust the gap as needed */
+      }
+      .radio-group label {
+        display: inline-block;
+      }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <form method="get">
+            <label for="task" class="newtasklabel">Task Description</label> <br>
+            <input
+              type="text"
+              name="newtaskdescription"
+              id="newtaskdescription"
+              size="80"
+              class="logclass"
+            />
+            <br /><br />
+            <label for="task" class="newtasklabel">Task End Date</label> <br>
+            <input
+              type="date"
+              name="newtaskdate"
+              id="newtaskdate"
+              class="logclass special"
+            />
+            <br /><br />
+            <label for="task" class="newtasklabel">Task End Time</label> <br>
+            <input
+              type="time"
+              name="newtaskendtime"
+              id="newtaskendtime"
+              size="40"
+              class="logclass special"
+              value="23:00:00"
+            />
+            <br /><br />
+            <label for="task" class="newtasklabel">Task Repeat Type</label> <br>
+            <div class="radio-group">
+                <input type="radio" name="newtaskrepeat" id="newtaskrepeat-once" value="once" checked>
+                <label for="newtaskrepeat-once">Once</label>
+                <input type="radio" name="newtaskrepeat" id="newtaskrepeat-daily" value="daily">
+                <label for="newtaskrepeat-daily">Daily</label>
+                <input type="radio" name="newtaskrepeat" id="newtaskrepeat-weekly" value="weekly">
+                <label for="newtaskrepeat-weekly">Weekly</label>
+            </div>
+            <br>
+          </form>
+          <div class="logButton next" id="newtaskbtn" onclick="newtaskcreate()">Save Task</div>
+          <div class="logButton back" id="cancelbtn" onclick="newtaskcancel()">Cancel</div>
+          <div class="logButton delete" id="newtaskdelete" onclick="newtaskdelete()">Delete Task</div>
+    </div>
+    <script>
+
+        const supabase = require("./supabase_client.js");
+        const task = JSON.parse(localStorage.getItem('taskToEdit'));
+        console.log(task)
+        const fs = require("fs");
+        const data_1 = fs.readFileSync("user.json");
+        const data_2 = JSON.parse(data_1);
+
+        var date = new Date();
+        var day = date.getDate();
+        var month = date.getMonth() + 1;
+        var year = date.getFullYear();
+        var hour = date.getHours();
+        var minute = date.getMinutes();
+        if (month < 10) month = "0" + month;
+        if (day < 10) day = "0" + day;
+        if (hour < 10) hour = "0" + hour;
+        if (minute < 10) minute = "0" + minute;
+        var today = year + "-" + month + "-" + day; 
+        var time = hour + ":" + minute
+        document.getElementById("newtaskdate").value = today;
+        document.getElementById("newtaskdescription").value = task.task
+        document.getElementById("newtaskdate").value = task.date
+        document.getElementById("newtaskendtime").value = task.time
+        if (task.once==true){
+            document.querySelector(`input[name="newtaskrepeat"][value="once"]`).checked = true;
+        } else if (task.daily==true){
+            document.querySelector(`input[name="newtaskrepeat"][value="daily"]`).checked = true;
+        } else if (task.weeky==true){
+            document.querySelector(`input[name="newtaskrepeat"][value="weeky"]`).checked = true;
+        }
+        const updatetask = async () => {
+            const taskDescription = document.getElementById("newtaskdescription").value;
+            const taskDate = document.getElementById("newtaskdate").value;
+            const taskEndTime = document.getElementById("newtaskendtime").value;
+            const taskRepeat = document.querySelector('input[name="newtaskrepeat"]:checked').value;
+            const username = data_2.dbuserdetails[0].username;
+            let prevrepeat;
+            if (task.once==true){
+                prevrepeat = "once"
+            } else if (task.daily==true){
+                prevrepeat = "daily"
+            } else if (task.weekly==true){
+                prevrepeat = "weekly"
+            }
+
+            const taskData = {
+                task: taskDescription,
+                date: taskDate,
+                username: username,
+                time: taskEndTime,
+            };
+            taskData[taskRepeat] = true; // Dynamically add the repeat type
+            taskData[prevrepeat] = false;
+
+            const { error } = await supabase
+                .from("task")
+                .update(taskData)
+                .eq("id", task.id);
+
+            if (error) {
+                console.error("Error inserting task:", error);
+            } else {
+                window.location.href = "main.html";
+            }
+        }
+
+        function newtaskcancel(){
+            window.location.href = "main.html";
+        }
+        const deletetask = async () => {
+            const deletetaskvar = await supabase
+            .from("task")
+            .delete()
+            .eq("id", task.id);
+            window.location.href = "main.html"
+        }
+        function newtaskcreate(){
+            const newtaskdescription = document.getElementById("newtaskdescription").value;
+            const newtaskdate = document.getElementById("newtaskdate").value;
+            const newtaskendtime = document.getElementById("newtaskendtime").value;
+            const newtaskrepeat = document.querySelector('input[name="newtaskrepeat"]:checked').value;
+            if (newtaskdescription == "" || newtaskdate == "" || newtaskendtime == ""){
+              window.open('errornull.html', '_blank', 'frame=false,nodeIntegration=no,width=500,height=200')
+
+            }else if(newtaskdate < today || (newtaskendtime < time && newtaskdate == today)){
+                window.open('errordate.html', '_blank', 'frame=false,nodeIntegration=no,width=500,height=200')
+            } else{
+                updatetask();
+            }
+            
+        }
+        function newtaskdelete(){
+            deletetask()
+        }
+    </script>
+</body>
+</html>
